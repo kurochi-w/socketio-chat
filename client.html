@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Socket.io Chat Example</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <style>
+        .chat_log { width: 1000px; height: 800px; border: 1px; background-color: #EFF0F1; margin: 0 0 10px 0; overflow: scroll; }
+        .chat_log div { margin: 5px; padding: 5px; border-radius: 10px 10px 10px 10px; }
+        #nameForm { width: 100px; margin-right: 15px; }
+        #msgForm { width: 700px; }
+        .is_mine { text-align: right; background-color: #cce5ff; }
+        .is_not_mine { background-color: #ffffff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3>Socket.io Chat Example</h3>
+        <div id="chatLogs" class="chat_log"></div>
+        <form class="form-inline">
+            <div class="form-group">
+                <label for="nameForm">Name: </label>
+                <input type="text" class="form-control" id="nameForm" readonly>
+                <label for="msgForm">Message: </label>
+                <input type="text" class="form-control" id="msgForm">
+            </div>
+            <button type="submit" class="btn btn-primary">Send</button>
+        </form>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+    $(function () {
+        // socket.io 서버에 접속한다
+        var socket = io();
+
+        let myName = makeRandomName();
+        $("#nameForm").val(myName);
+
+        // 서버로 자신의 정보를 전송한다.
+        socket.emit("login", {
+            name: myName,
+            userid: "pshyun0220@gmail.com"
+        });
+
+        // 서버로부터의 메시지가 수신되면
+        socket.on("login", function (data) {
+            $("#chatLogs").append("<div><strong>" + data + "</strong> has joined</div>");
+        });
+
+        // 서버로부터의 메시지가 수신되면
+        socket.on("chat", function (data) {
+            writeChat(data.from.name, data.msg, false)
+            //$("#chatLogs").append("<div>from <strong>" + data.from.name + "</strong> : " + data.msg + "</div>");
+        });
+
+        // Send 버튼이 클릭되면
+        $("form").submit(function (e) {
+            e.preventDefault();
+            var $msgForm = $("#msgForm");
+            writeChat($("#nameForm").val(), $msgForm.val(), true);
+
+            // 서버로 메시지를 전송한다.
+            socket.emit("chat", { msg: $msgForm.val() });
+            $msgForm.val("");
+        });
+
+        function writeChat(name, msg, isMine) {
+            if (msg === '') {
+                return;
+            }
+            let mineClass = 'is_not_mine';
+            if (isMine) {
+                mineClass = "is_mine";
+            }
+            $("#chatLogs").append("<div class=\"" + mineClass + "\">from <strong>" + name + "</strong> : <p>" + msg + "</p></div>");
+            $("#chatLogs").scrollTop($("#chatLogs")[0].scrollHeight);
+        }
+
+        function makeRandomName() {
+            var name = "";
+            var possible = "abcdefghijklmnopqrstuvwxyz";
+            for ( var i = 0; i < 3; i++ ) {
+                name += possible.charAt(Math.floor(Math.random() * possible.length));
+            }
+            return name;
+        }
+    });
+    </script>
+</body>
+</html>
